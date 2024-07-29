@@ -13,23 +13,19 @@ public class Scene extends JPanel implements KeyListener {
     private Generation gen;
     private ActorModel.Actor player;
     private ActorModel.Actor enemy;
+    private boolean waitingForPlayer = true;
     private boolean exit = false;
+    private JPanel mainPanel;
+    private CardLayout cardLayout;
 
-    public Scene() {
+    public Scene(CardLayout cardLayout, JPanel mainPanel, ActorModel.Actor player, ActorModel.Actor enemy) {
+        this.cardLayout = cardLayout;
+        this.mainPanel = mainPanel;
+        this.player = player;
+        this.enemy = enemy;
+
         gen = new Generation();
         map = gen.TileSet();
-
-        player = new ActorModel.Actor(
-                "Hero",
-                100,
-                new Point2D.Float(10, 10)
-        );
-
-        enemy = new ActorModel.Actor(
-                "Enemy",
-                20,
-                new Point2D.Float(1, 1)
-        );
 
         setFocusable(true);
         addKeyListener(this);
@@ -39,10 +35,12 @@ public class Scene extends JPanel implements KeyListener {
         if (exit) {
             System.exit(0);
         }
-
+        if (!waitingForPlayer) {
         MapFrame();
         EnemyTurn();
         MapFrame();
+        waitingForPlayer = true;
+        }
     }
 
     private void MapFrame() {
@@ -82,18 +80,20 @@ public class Scene extends JPanel implements KeyListener {
         int keyCode = e.getKeyCode();
         if (PlayerTurn(keyCode)) {
             exit = true;
+        } else
+        {
+            waitingForPlayer = false;
+            updateGame();    
         }
-        updateGame();
+       
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        // Not used
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
-        // Not used
     }
 
     private boolean PlayerTurn(int keyCode) {
@@ -134,14 +134,16 @@ public class Scene extends JPanel implements KeyListener {
         return false;
     }
 
-    private Point2D.Float EnemyTurn() {
+    private void EnemyTurn() {
         Point2D.Float nextStep = EnemyPathFinding((Point2D.Float) enemy.getLocation(), (Point2D.Float) player.getLocation());
-        if (nextStep != null) {
+        if (nextStep != null && !enemy.getLocation().equals(player.getLocation())) {
             map[(int) enemy.getLocation().getX()][(int) enemy.getLocation().getY()] = ' ';
             enemy.setLocation(nextStep);
             map[(int) enemy.getLocation().getX()][(int) enemy.getLocation().getY()] = 'E';
+        } else {
+            // Switch to FightScene
+            cardLayout.show(mainPanel, "FightScene");
         }
-        return nextStep;
     }
 
     private Point2D.Float EnemyPathFinding(Point2D.Float start, Point2D.Float target) {
@@ -186,23 +188,8 @@ public class Scene extends JPanel implements KeyListener {
         return null;
     }
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Adventure Game");
-        Scene scene = new Scene();
-        frame.add(scene);
-        frame.setSize(420, 460);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
-    }
-
     public void startGameLoop() {
-        while (true) {
-            
-            try {
-                Thread.sleep(100); 
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        javax.swing.Timer timer = new javax.swing.Timer(100, e -> updateGame());
+        timer.start();
     }
 }

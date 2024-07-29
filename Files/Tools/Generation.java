@@ -8,7 +8,6 @@ public class Generation {
     private static final Random rand = new Random();
 
     public Generation() {
-        // Constructor
     }
 
     public char[][] TileSet() {
